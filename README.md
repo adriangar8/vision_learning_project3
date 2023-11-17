@@ -3,3 +3,5 @@ In this repository the 3rd project to develop in the Vision &amp; Learning cours
 
 In Flickr8k Data Preparation.ipynb I have retrieved several analytics about our dataset, such as captions length, most common character and sentence...
 This has been done for each partition of the .npy file.
+
+The plots are merely drawn as a simple visualization of the data distribution, that can be contrasted with the given numerical values.
