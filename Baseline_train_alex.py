@@ -136,9 +136,9 @@ def train(EPOCHS):
         loss, res = train_one_epoch(model, optimizer, crit, metric, dataloader_train)
         print(f'train loss: {loss:.2f}, metric: {res:.2f}, epoch: {epoch}')
         loss_v, res_v = eval_epoch(model, crit, metric, dataloader_valid)
-        print(f'valid loss: {loss:.2f}, metric: {res:.2f}')
+        print(f'valid loss: {loss_v:.2f}, metric: {res_v:.2f}')
     loss_t, res_t = eval_epoch(model, crit, metric, dataloader_test)
-    print(f'test loss: {loss:.2f}, metric: {res:.2f}')
+    print(f'test loss: {loss_t:.2f}, metric: {res_t:.2f}')
     
 def train_one_epoch(model, optimizer, crit, metric, dataloader):
     total_loss= 0.0
@@ -192,9 +192,9 @@ def eval_epoch(model, crit, metric, dataloader):
 
             METRIC = evaluate.load(str(metric).lower())
 
-            # Convert outputs and targets to sentences
-            outputs_sentence = ["".join(idx2char[idx.item()] for idx in output) for output in outputs]
-            targets_sentence = [["".join(idx2char[idx.item()] for idx in sentence) if idx.item() != char2idx['<PAD>'] else '' for sentence in target] for target in targets]
+
+
+
 
             metriccompute = METRIC.compute(predictions=outputs, references=targets,max_order=1 )
 
