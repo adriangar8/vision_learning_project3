@@ -116,6 +116,8 @@ def idx_to_sentence(indices, idx_to_word):
 
 
 def train(EPOCHS):
+    losses=[]
+    metrics=[]
     data_train = Data(data, partitions['train'])
     data_valid = Data(data, partitions['valid'])
     data_test = Data(data, partitions['test'])
@@ -133,48 +135,82 @@ def train(EPOCHS):
     #metric = "rouge"
     #metric = "meteor"
     for epoch in range(EPOCHS):
+        print("Entrando en la función")
         loss, res = train_one_epoch(model, optimizer, crit, metric, dataloader_train)
         print(f'train loss: {loss:.2f}, metric: {res:.2f}, epoch: {epoch}')
-        loss_v, res_v = eval_epoch(model, crit, metric, dataloader_valid)
-        print(f'valid loss: {loss_v:.2f}, metric: {res_v:.2f}')
-    loss_t, res_t = eval_epoch(model, crit, metric, dataloader_test)
-    print(f'test loss: {loss_t:.2f}, metric: {res_t:.2f}')
+        losses.append(loss)
+        metrics.append(res)
+        #loss_v, res_v = eval_epoch(model, crit, metric, dataloader_valid)
+        #print(f'valid loss: {loss_v:.2f}, metric: {res_v:.2f}')
+    #loss_t, res_t = eval_epoch(model, crit, metric, dataloader_test)
+    #print(f'test loss: {loss_t:.2f}, metric: {res_t:.2f}')
     
 def train_one_epoch(model, optimizer, crit, metric, dataloader):
     total_loss= 0.0
     total_metric= 0.0
+
     for batch in dataloader:
         inputs, targets = batch
         inputs = inputs.to(DEVICE) 
         
         targets = targets.to(DEVICE)
 
+
         
         outputs= model(inputs)
         targets = targets.long()
+
+
         loss= crit(outputs,targets)
-        
+
         total_loss += loss.item()
 
+
+        
+
+        # Take argmax to get most probable character indices
+        outputs_idx = torch.argmax(outputs, dim=1) # el dim -1 es para decir que quieres encontrar el indice del valor máximo del tensor de probabilidades
+
+        # Convert outputs and targets to sentences
+        targets_sentence = ["".join(idx2char[idx.item()] for idx in target if idx.item() not in [char2idx['<EOS>'], char2idx['<PAD>'], char2idx['<SOS>']]) for target in targets]
+
+        outputs_sentence = ["".join(idx2char[idx.item()] for idx in output if idx.item() not in [char2idx['<EOS>'], char2idx['<PAD>'], char2idx['<SOS>']]) for output in outputs_idx]
+
+        
+        #outputs_sentence = ''.join([idx2char[idx.item()] for idx in outputs if idx.item() not in [char2idx['<EOS>'], char2idx['<PAD>'], char2idx['<SOS>']]])
+        #targets_sentence = ''.join([idx2char[idx.item()] for idx in targets if idx.item() not in [char2idx['<EOS>'], char2idx['<PAD>'], char2idx['<SOS>']]])
+
+
+        
         METRIC = evaluate.load(str(metric).lower())
 
-        metriccompute = METRIC.compute(predictions=outputs, references=targets,max_order=1 )
+
+        if metric == "bleu":
+                metriccompute = METRIC.compute(predictions=outputs_sentence, references=targets_sentence,max_order=1 )
+        elif metric == "bleu2":
+                metriccompute = METRIC.compute(predictions=outputs_sentence, references=targets_sentence,max_order=2 )
+        else:
+                metriccompute = METRIC.compute(predictions=outputs, references=targets )
+
+
 
         if metric == "rouge":
                 total_metric += metriccompute['rougeL']
         else:
                 total_metric += metriccompute[str(metric).lower()]
         
+
+        
+        
     avg_loss = total_loss / len(dataloader)
     avg_metric = total_metric / len(dataloader)
     print(f'train loss: {avg_loss:.2f}, metric: {avg_metric:.2f}')
     
-    return avg_loss, avg_metric
+    return avg_loss
 
 def eval_epoch(model, crit, metric, dataloader):
     model.eval()
     total_loss = 0.0
-    total_metric = 0.0
 
     with torch.no_grad():
         for batch in dataloader:
@@ -190,24 +226,12 @@ def eval_epoch(model, crit, metric, dataloader):
 
             total_loss += loss.item()
 
-            METRIC = evaluate.load(str(metric).lower())
 
-
-
-
-
-            metriccompute = METRIC.compute(predictions=outputs, references=targets,max_order=1 )
-
-            if metric == "rouge":
-                total_metric += metriccompute['rougeL']
-            else:
-                total_metric += metriccompute[str(metric).lower()]
         
     avg_loss = total_loss / len(dataloader)
-    avg_metric = (total_metric / len(dataloader)) * 100
-    print(f'valid loss: {avg_loss:.2f}, metric: {avg_metric:.2f}')
+
+    print(f'valid loss: {avg_loss:.2f}')
     
-    return avg_loss, avg_metric
+    return avg_loss
 
-
-train(1)
+train(10)
