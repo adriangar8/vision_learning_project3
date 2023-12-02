@@ -234,4 +234,6 @@ def eval_epoch(model, crit, metric, dataloader):
     
     return avg_loss
 
-train(10)
+
+EPOCHS= 50
+train(EPOCHS)
